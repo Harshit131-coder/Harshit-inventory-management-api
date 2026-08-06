@@ -23,9 +23,10 @@ public class ProductRepository : IProductRepository
         await _db.Products
             .Include(p => p.Category)
             .ToListAsync();
-    public async Task<bool> SkuExistsAsync(string sku) =>
-        await _db.Products
-            .AnyAsync(p => p.Sku == sku);
+    public async Task<bool> SkuExistsAsync(string sku, int? excludeId = null) =>
+        await _db.Products.AnyAsync(p => p.Sku == sku   && 
+                                    (excludeId == null  || 
+                                    p.Id != excludeId));
     public async Task<bool> CategoryExistsAsync(int categoryId) =>
         await _db.Categories
             .AnyAsync(c => c.Id == categoryId);
@@ -35,4 +36,9 @@ public class ProductRepository : IProductRepository
             .AddAsync(product);
     public async Task SaveChangesAsync() =>
         await _db.SaveChangesAsync();
+    public Task RemoveAsync(Product product)
+    {
+        _db.Products.Remove(product);
+        return Task.CompletedTask;
+    }
 }
