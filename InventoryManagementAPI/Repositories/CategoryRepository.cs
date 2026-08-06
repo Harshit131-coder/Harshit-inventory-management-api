@@ -19,7 +19,10 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<IReadOnlyList<Category>> GetAllAsync() =>
         await _db.Categories.ToListAsync();
-
+    public async Task<IReadOnlyList<Category>> GetAllWithProductsAsync() =>
+        await _db.Categories
+            .Include(c => c.Products)
+            .ToListAsync();
     public async Task<bool> NameExistsAsync(string name) =>
         await _db.Categories.AnyAsync(c => c.Name == name);
 

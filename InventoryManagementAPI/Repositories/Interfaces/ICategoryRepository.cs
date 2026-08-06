@@ -6,6 +6,7 @@ namespace InventoryManagementAPI.Repositories.Interfaces
     {
         Task<Category?> GetByIdAsync(int id);
         Task<IReadOnlyList<Category>> GetAllAsync();
+        Task<IReadOnlyList<Category>> GetAllWithProductsAsync();
         Task<bool> NameExistsAsync(string name);
         Task AddAsync(Category category);
         Task SaveChangesAsync();
