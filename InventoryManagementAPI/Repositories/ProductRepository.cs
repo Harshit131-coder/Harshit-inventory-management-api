@@ -11,7 +11,7 @@ public class ProductRepository : IProductRepository
 
     public ProductRepository(AppDbContext db)
     {
-        _db = db;
+       this._db = db;
     }
 
     public async Task<Product?> GetByIdAsync(int id) =>
