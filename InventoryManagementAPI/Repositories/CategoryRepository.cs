@@ -16,7 +16,10 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task<Category?> GetByIdAsync(int id) =>
         await _db.Categories.FindAsync(id);
-
+    public async Task<Category?> GetByIdWithProductsAsync(int id) =>
+    await _db.Categories
+            .Include(c => c.Products)
+            .FirstOrDefaultAsync(c => c.Id == id);
     public async Task<IReadOnlyList<Category>> GetAllAsync() =>
         await _db.Categories.ToListAsync();
     public async Task<IReadOnlyList<Category>> GetAllWithProductsAsync() =>
@@ -29,6 +32,11 @@ public class CategoryRepository : ICategoryRepository
     public async Task AddAsync(Category category) =>
         await _db.Categories.AddAsync(category);
 
+    public Task RemoveAsync(Category category)
+    {
+        _db.Categories.Remove(category);
+        return Task.CompletedTask;
+    }
     public async Task SaveChangesAsync() =>
         await _db.SaveChangesAsync();
 }
