@@ -9,6 +9,7 @@ namespace InventoryManagementAPI.Repositories.Interfaces
         Task<IReadOnlyList<Category>> GetAllAsync();
         Task<IReadOnlyList<Category>> GetAllWithProductsAsync();
         Task<bool> NameExistsAsync(string name);
+        Task<(IReadOnlyList<Category> Items, int TotalCount)> GetPagedWithProductsAsync(int pageNumber, int pageSize, string? search);
         Task AddAsync(Category category);
         Task RemoveAsync(Category category);
         Task SaveChangesAsync();

@@ -30,7 +30,32 @@ public class ProductRepository : IProductRepository
     public async Task<bool> CategoryExistsAsync(int categoryId) =>
         await _db.Categories
             .AnyAsync(c => c.Id == categoryId);
+    public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetPagedWithCategoryAsync(
+        int pageNumber, int pageSize, string? search, int? categoryId)
+    {
+        IQueryable<Product> query = _db.Products.Include(p => p.Category);
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(p => p.Name.Contains(search));
+        }
+
+        if (categoryId is not null)
+        {
+            query = query.Where(p => p.CategoryId == categoryId);
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var items = await _db.Products
+            .Include(p => p.Category)
+            .OrderBy(p => p.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
     public async Task AddAsync(Product product) =>
         await _db.Products
             .AddAsync(product);

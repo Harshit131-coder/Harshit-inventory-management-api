@@ -1,8 +1,10 @@
 ﻿using InventoryManagementAPI.Models.DTOs.Category;
+using InventoryManagementAPI.Models.DTOs.Common;
 using InventoryManagementAPI.Models.Entities;
 using InventoryManagementAPI.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace InventoryManagementAPI.Controllers
 {
@@ -19,29 +21,37 @@ namespace InventoryManagementAPI.Controllers
 
         [HttpGet]
 
-        public async Task<ActionResult<IReadOnlyList<CategoryDto>>> GetAll()
+        public async Task<ActionResult<ApiResponse<PagedResult<CategoryDto>>>> GetAll(
+            int pageNumber = 1, int pageSize = 10, string? search = null)
         {
-            var categories = await _repository.GetAllWithProductsAsync();
-            
-            var result = categories.Select(c => new CategoryDto
-            {
-                Id              = c.Id,
-                Name            = c.Name,
-                Description     = c.Description,
-                ProductCount    = c.Products.Count,
-                CreatedAtUtc    = c.CreatedAtUtc,
-                UpdatedAtUtc    = c.UpdatedAtUtc
-            }).ToList();
+            var (categories, totalCount) = await _repository.GetPagedWithProductsAsync(pageNumber, pageSize, search);
 
-            return Ok(result);
+            var result = new PagedResult<CategoryDto>
+            {
+                Items = categories.Select(c => new CategoryDto
+                {
+                    Id              = c.Id,
+                    Name            = c.Name,
+                    Description     = c.Description,
+                    ProductCount    = c.Products.Count,
+                    CreatedAtUtc    = c.CreatedAtUtc,
+                    UpdatedAtUtc    = c.UpdatedAtUtc
+                }).ToList(),
+                PageNumber  = pageNumber,
+                PageSize    = pageSize,
+                TotalCount  = totalCount
+            };
+
+             return Ok(ApiResponse<PagedResult<CategoryDto>>.SuccessResponse(result, "Category retrieved successfully"));
         }
 
+
         [HttpPost]
-        public async Task<ActionResult<CategoryDto>> Create(CreateCategoryDto dto)
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> Create(CreateCategoryDto dto)
         {
             if (await _repository.NameExistsAsync(dto.Name))
             {
-                return Conflict($"A category named '{dto.Name}' already exists.");
+                return Conflict( ApiResponse<CategoryDto>.FailureResponse($"A category named '{dto.Name}' already exists."));
             }
 
             var category = new Category
@@ -63,17 +73,19 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = category.UpdatedAtUtc
             };
 
-            return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result);
+            return CreatedAtAction(nameof(GetAll), 
+                new { id = result.Id }, 
+                ApiResponse<CategoryDto>.SuccessResponse(result, "Category added successfully"));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<CategoryDto>> GetById(int id)
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> GetById(int id)
         {
             var category = await _repository.GetByIdWithProductsAsync(id);
 
             if (category is null)
             {
-                return NotFound($"Category with id {id} was not found.");
+                return NotFound(ApiResponse<CategoryDto>.FailureResponse($"Category with id {id} was not found."));
             }
 
             var result = new CategoryDto
@@ -86,17 +98,17 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = category.UpdatedAtUtc
             };
 
-            return Ok(result);
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, "Category retrieved successfully"));
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<CategoryDto>> Update(int id, UpdateCategoryDto dto)
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> Update(int id, UpdateCategoryDto dto)
         {
             var category = await _repository.GetByIdWithProductsAsync(id);
 
             if (category is null)
             {
-                return NotFound($"Category with id {id} was not found.");
+                return NotFound(ApiResponse<CategoryDto>.FailureResponse($"Category with id {id} was not found."));
             }
 
             category.Name           = dto.Name;
@@ -115,7 +127,7 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = category.UpdatedAtUtc
             };
 
-            return Ok(result);
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, "Category updated successfully"));
         }
 
         [HttpDelete("{id}")]
@@ -125,12 +137,12 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
-                return NotFound($"Category with id {id} was not found.");
+                return NotFound(ApiResponse<CategoryDto>.FailureResponse($"Category with id {id} was not found."));
             }
 
             if (category.Products.Any())
             {
-                return Conflict("Cannot delete a category that still has products assigned to it.");
+                return Conflict(ApiResponse<CategoryDto>.FailureResponse("Cannot delete a category that still has products assigned to it."));
             }
 
             await _repository.RemoveAsync(category);

@@ -1,4 +1,5 @@
-﻿using InventoryManagementAPI.Models.DTOs.Product;
+﻿using InventoryManagementAPI.Models.DTOs.Common;
+using InventoryManagementAPI.Models.DTOs.Product;
 using InventoryManagementAPI.Models.Entities;
 using InventoryManagementAPI.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -18,33 +19,42 @@ namespace InventoryManagementAPI.Controllers
 
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetAll()
+        public async Task<ActionResult<ApiResponse<PagedResult<ProductDto>>>> GetAll(
+            int pageNumber = 1, int pageSize = 10, string ? search = null, int? categoryId = null)
         {
-            var products = await _repository.GetAllWithCategoryAsync();
-            var result = products.Select(p => new ProductDto
+            var (products, totalCount) = await _repository.GetPagedWithCategoryAsync(pageNumber, pageSize, search, categoryId);
+
+            var result = new PagedResult<ProductDto>
             {
-                Id              = p.Id,
-                Name            = p.Name,
-                Sku             = p.Sku,
-                Description     = p.Description,
-                Price           = p.Price,
-                QuantityInStock = p.QuantityInStock,
-                CategoryId      = p.CategoryId,
-                CategoryName    = p.Category?.Name ?? string.Empty,
-                CreatedAtUtc    = p.CreatedAtUtc,
-                UpdatedAtUtc    = p.UpdatedAtUtc
-            }).ToList();
-            return Ok(result);
+                Items = products.Select(p => new ProductDto
+                {
+                    Id              = p.Id,
+                    Name            = p.Name,
+                    Sku             = p.Sku,
+                    Description     = p.Description,
+                    Price           = p.Price,
+                    QuantityInStock = p.QuantityInStock,
+                    CategoryId      = p.CategoryId,
+                    CategoryName    = p.Category?.Name ?? string.Empty,
+                    CreatedAtUtc    = p.CreatedAtUtc,
+                    UpdatedAtUtc    = p.UpdatedAtUtc
+                }).ToList(),
+                PageNumber  = pageNumber,
+                PageSize    = pageSize,
+                TotalCount  = totalCount
+            };
+           
+            return Ok(ApiResponse<PagedResult<ProductDto>>.SuccessResponse(result, "Product retrieved successfuly"));
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProductDto>> GetById(int id)
+        public async Task<ActionResult<ApiResponse<ProductDto>>> GetById(int id)
         {
             var product = await _repository.GetByIdWithCategoryAsync(id);
 
             if(product == null)
             {
-                return NotFound($"Product with ID {id} not found.");
+                return NotFound(ApiResponse<ProductDto>.FailureResponse($"Product with ID {id} not found."));
             }
 
             var result = new ProductDto
@@ -61,20 +71,20 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = product.UpdatedAtUtc
             };
 
-            return Ok(result);
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, "Product retrieved successfully"));
         }
 
         [HttpPost]
-        public async Task<ActionResult<ProductDto>> Create(CreateProductDto dto)
+        public async Task<ActionResult<ApiResponse<ProductDto>>> Create(CreateProductDto dto)
         {
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
             {
-                return BadRequest("The specified category does not exist.");
+                return BadRequest(ApiResponse<ProductDto>.FailureResponse("The specified category does not exist."));
             }
 
             if (await _repository.SkuExistsAsync(dto.Sku))
             {
-                return Conflict($"A product with SKU '{dto.Sku}' already exists.");
+                return Conflict(ApiResponse<ProductDto>.FailureResponse($"A product with SKU '{dto.Sku}' already exists."));
             }
 
             var product = new Product
@@ -106,27 +116,29 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = created.UpdatedAtUtc
             };
 
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            return CreatedAtAction(nameof(GetById), 
+                new { id = result.Id },
+                ApiResponse<ProductDto>.SuccessResponse(result, "Product added successfully"));
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<ProductDto>> Update(int id, UpdateProductDto dto)
+        public async Task<ActionResult<ApiResponse<ProductDto>>> Update(int id, UpdateProductDto dto)
         {
             var product = await _repository.GetByIdAsync(id);
 
             if (product is null)
             {
-                return NotFound($"Product with id {id} was not found.");
+                return NotFound(ApiResponse<ProductDto>.FailureResponse($"Product with id {id} was not found."));
             }
 
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
             {
-                return BadRequest("The specified category does not exist.");
+                return BadRequest(ApiResponse<ProductDto>.FailureResponse("The specified category does not exist."));
             }
 
             if (await _repository.SkuExistsAsync(dto.Sku, excludeId: id))
             {
-                return Conflict($"A product with SKU '{dto.Sku}' already exists.");
+                return Conflict(ApiResponse<ProductDto>.FailureResponse($"A product with SKU '{dto.Sku}' already exists."));
             }
 
             product.Name            = dto.Name;
@@ -155,7 +167,7 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = updated.UpdatedAtUtc
             };
 
-            return Ok(result);
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, "Product updated successfully"));
         }
 
         [HttpDelete("{id}")]
@@ -165,7 +177,7 @@ namespace InventoryManagementAPI.Controllers
 
             if (product is null)
             {
-                return NotFound($"Product with id {id} was not found.");
+                return NotFound(ApiResponse<ProductDto>.FailureResponse($"Product with id {id} was not found."));
             }
 
             await _repository.RemoveAsync(product);
