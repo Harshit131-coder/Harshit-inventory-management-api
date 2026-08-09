@@ -18,15 +18,15 @@ namespace InventoryManagementAPI.Shared.Mappings
 
         public static Category ToEntity(this CreateCategoryDto dto) => new()
         {
-            Name = dto.Name,
-            Description = dto.Description
+            Name            = dto.Name,
+            Description     = dto.Description
         };
 
         public static void ApplyUpdate(this Category category, UpdateCategoryDto dto)
         {
-            category.Name = dto.Name;
-            category.Description = dto.Description;
-            category.UpdatedAtUtc = DateTime.UtcNow;
+            category.Name           = dto.Name;
+            category.Description    = dto.Description;
+            category.UpdatedAtUtc   = DateTime.UtcNow;
         }
         public static ProductDto ToDto(this Product product) => new()
         {

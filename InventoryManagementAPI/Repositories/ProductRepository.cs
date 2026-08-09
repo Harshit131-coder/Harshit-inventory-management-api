@@ -47,7 +47,7 @@ public class ProductRepository : IProductRepository
 
         var totalCount = await query.CountAsync();
 
-        var items = await _db.Products
+        var items = await query
             .Include(p => p.Category)
             .OrderBy(p => p.Name)
             .Skip((pageNumber - 1) * pageSize)
