@@ -6,6 +6,7 @@ using InventoryManagementAPI.Repositories.Interfaces;
 using InventoryManagementAPI.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using InventoryManagementAPI.Shared.Mappings;
 
 namespace InventoryManagementAPI.Controllers
 {
@@ -28,19 +29,7 @@ namespace InventoryManagementAPI.Controllers
 
             var result = new PagedResult<ProductDto>
             {
-                Items = products.Select(p => new ProductDto
-                {
-                    Id              = p.Id,
-                    Name            = p.Name,
-                    Sku             = p.Sku,
-                    Description     = p.Description,
-                    Price           = p.Price,
-                    QuantityInStock = p.QuantityInStock,
-                    CategoryId      = p.CategoryId,
-                    CategoryName    = p.Category?.Name ?? string.Empty,
-                    CreatedAtUtc    = p.CreatedAtUtc,
-                    UpdatedAtUtc    = p.UpdatedAtUtc
-                }).ToList(),
+                Items       = products.Select(p => p.ToDto()).ToList(),
                 PageNumber  = pageNumber,
                 PageSize    = pageSize,
                 TotalCount  = totalCount
@@ -59,21 +48,7 @@ namespace InventoryManagementAPI.Controllers
                 throw new NotFoundException("Product", id);
             }
 
-            var result = new ProductDto
-            {
-                Id              = product.Id,
-                Name            = product.Name,
-                Sku             = product.Sku,
-                Description     = product.Description,
-                Price           = product.Price,
-                QuantityInStock = product.QuantityInStock,
-                CategoryId      = product.CategoryId,
-                CategoryName    = product.Category?.Name ?? string.Empty,
-                CreatedAtUtc    = product.CreatedAtUtc,
-                UpdatedAtUtc    = product.UpdatedAtUtc
-            };
-
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, Messages.Product.Retrieved));
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(product.ToDto(), Messages.Product.Retrieved));
         }
 
         [HttpPost]
@@ -89,38 +64,16 @@ namespace InventoryManagementAPI.Controllers
                 throw new ConflictException(Messages.Product.SkuAlreadyExists);
             }
 
-            var product = new Product
-            {
-                Name            = dto.Name,
-                Sku             = dto.Sku,
-                Description     = dto.Description,
-                Price           = dto.Price,
-                QuantityInStock = dto.QuantityInStock,
-                CategoryId      = dto.CategoryId
-            };
-
+            var product = dto.ToEntity();
             await _repository.AddAsync(product);
             await _repository.SaveChangesAsync();
 
             var created = await _repository.GetByIdWithCategoryAsync(product.Id);
 
-            var result = new ProductDto
-            {
-                Id              = created!.Id,
-                Name            = created.Name,
-                Sku             = created.Sku,
-                Description     = created.Description,
-                Price           = created.Price,
-                QuantityInStock = created.QuantityInStock,
-                CategoryId      = created.CategoryId,
-                CategoryName    = created.Category?.Name ?? string.Empty,
-                CreatedAtUtc    = created.CreatedAtUtc,
-                UpdatedAtUtc    = created.UpdatedAtUtc
-            };
-
+          
             return CreatedAtAction(nameof(GetById), 
-                new { id = result.Id },
-                ApiResponse<ProductDto>.SuccessResponse(result, Messages.Product.Created));
+                new { id = product.Id },
+                ApiResponse<ProductDto>.SuccessResponse(created!.ToDto(), Messages.Product.Created));
         }
 
         [HttpPut("{id}")]
@@ -143,33 +96,14 @@ namespace InventoryManagementAPI.Controllers
                   throw new ConflictException(Messages.Product.SkuAlreadyExists);
             }
 
-            product.Name            = dto.Name;
-            product.Sku             = dto.Sku;
-            product.Description     = dto.Description;
-            product.Price           = dto.Price;
-            product.QuantityInStock = dto.QuantityInStock;
-            product.CategoryId      = dto.CategoryId;
-            product.UpdatedAtUtc    = DateTime.UtcNow;
 
+            product.ApplyUpdate(dto);
             await _repository.SaveChangesAsync();
 
             var updated = await _repository.GetByIdWithCategoryAsync(id);
 
-            var result = new ProductDto
-            {
-                Id              = updated!.Id,
-                Name            = updated.Name,
-                Sku             = updated.Sku,
-                Description     = updated.Description,
-                Price           = updated.Price,
-                QuantityInStock = updated.QuantityInStock,
-                CategoryId      = updated.CategoryId,
-                CategoryName    = updated.Category?.Name ?? string.Empty,
-                CreatedAtUtc    = updated.CreatedAtUtc,
-                UpdatedAtUtc    = updated.UpdatedAtUtc
-            };
 
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, Messages.Product.Updated));
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(updated!.ToDto(), Messages.Product.Updated));
         }
 
         [HttpDelete("{id}")]

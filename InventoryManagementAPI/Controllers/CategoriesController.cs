@@ -7,6 +7,7 @@ using InventoryManagementAPI.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using InventoryManagementAPI.Shared.Mappings;
 
 namespace InventoryManagementAPI.Controllers
 {
@@ -30,15 +31,7 @@ namespace InventoryManagementAPI.Controllers
 
             var result = new PagedResult<CategoryDto>
             {
-                Items = categories.Select(c => new CategoryDto
-                {
-                    Id              = c.Id,
-                    Name            = c.Name,
-                    Description     = c.Description,
-                    ProductCount    = c.Products.Count,
-                    CreatedAtUtc    = c.CreatedAtUtc,
-                    UpdatedAtUtc    = c.UpdatedAtUtc
-                }).ToList(),
+                Items       = categories.Select(c => c.ToDto()).ToList(),
                 PageNumber  = pageNumber,
                 PageSize    = pageSize,
                 TotalCount  = totalCount
@@ -56,28 +49,13 @@ namespace InventoryManagementAPI.Controllers
                 throw new ConflictException(Messages.Category.NameAlreadyExists);
             }
 
-            var category = new Category
-            {
-                Name        = dto.Name,
-                Description = dto.Description
-            };
-
+            var category = dto.ToEntity();
             await _repository.AddAsync(category);
             await _repository.SaveChangesAsync();
 
-            var result = new CategoryDto
-            {
-                Id              = category.Id,
-                Name            = category.Name,
-                Description     = category.Description,
-                ProductCount    = 0,
-                CreatedAtUtc    = category.CreatedAtUtc,
-                UpdatedAtUtc    = category.UpdatedAtUtc
-            };
-
             return CreatedAtAction(nameof(GetAll), 
-                new { id = result.Id }, 
-                ApiResponse<CategoryDto>.SuccessResponse(result, Messages.Category.Created));
+                new { id = category.Id }, 
+                ApiResponse<CategoryDto>.SuccessResponse(category.ToDto(), Messages.Category.Created));
         }
 
         [HttpGet("{id}")]
@@ -90,17 +68,7 @@ namespace InventoryManagementAPI.Controllers
                 throw new NotFoundException("Category", id);
             }
 
-            var result = new CategoryDto
-            {
-                Id              = category.Id,
-                Name            = category.Name,
-                Description     = category.Description,
-                ProductCount    = category.Products.Count,
-                CreatedAtUtc    = category.CreatedAtUtc,
-                UpdatedAtUtc    = category.UpdatedAtUtc
-            };
-
-            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, Messages.Category.Retrieved));
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(category.ToDto(), Messages.Category.Retrieved));
         }
 
         [HttpPut("{id}")]
@@ -113,23 +81,11 @@ namespace InventoryManagementAPI.Controllers
                 throw new NotFoundException("Category", id);
             }
 
-            category.Name           = dto.Name;
-            category.Description    = dto.Description;
-            category.UpdatedAtUtc   = DateTime.UtcNow;
-
+            category.ApplyUpdate(dto);
             await _repository.SaveChangesAsync();
 
-            var result = new CategoryDto
-            {
-                Id              = category.Id,
-                Name            = category.Name,
-                Description     = category.Description,
-                ProductCount    = category.Products.Count,
-                CreatedAtUtc    = category.CreatedAtUtc,
-                UpdatedAtUtc    = category.UpdatedAtUtc
-            };
 
-            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, Messages.Category.Updated));
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(category.ToDto(), Messages.Category.Updated));
         }
 
         [HttpDelete("{id}")]
