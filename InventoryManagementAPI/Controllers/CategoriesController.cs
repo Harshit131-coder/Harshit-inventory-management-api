@@ -1,7 +1,9 @@
-﻿using InventoryManagementAPI.Models.DTOs.Category;
+﻿using InventoryManagementAPI.Shared.Exceptions;
+using InventoryManagementAPI.Models.DTOs.Category;
 using InventoryManagementAPI.Models.DTOs.Common;
 using InventoryManagementAPI.Models.Entities;
 using InventoryManagementAPI.Repositories.Interfaces;
+using InventoryManagementAPI.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -42,7 +44,7 @@ namespace InventoryManagementAPI.Controllers
                 TotalCount  = totalCount
             };
 
-             return Ok(ApiResponse<PagedResult<CategoryDto>>.SuccessResponse(result, "Category retrieved successfully"));
+             return Ok(ApiResponse<PagedResult<CategoryDto>>.SuccessResponse(result, Messages.Category.Retrieved));
         }
 
 
@@ -51,7 +53,7 @@ namespace InventoryManagementAPI.Controllers
         {
             if (await _repository.NameExistsAsync(dto.Name))
             {
-                return Conflict( ApiResponse<CategoryDto>.FailureResponse($"A category named '{dto.Name}' already exists."));
+                throw new ConflictException(Messages.Category.NameAlreadyExists);
             }
 
             var category = new Category
@@ -75,7 +77,7 @@ namespace InventoryManagementAPI.Controllers
 
             return CreatedAtAction(nameof(GetAll), 
                 new { id = result.Id }, 
-                ApiResponse<CategoryDto>.SuccessResponse(result, "Category added successfully"));
+                ApiResponse<CategoryDto>.SuccessResponse(result, Messages.Category.Created));
         }
 
         [HttpGet("{id}")]
@@ -85,7 +87,7 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
-                return NotFound(ApiResponse<CategoryDto>.FailureResponse($"Category with id {id} was not found."));
+                throw new NotFoundException("Category", id);
             }
 
             var result = new CategoryDto
@@ -98,7 +100,7 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = category.UpdatedAtUtc
             };
 
-            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, "Category retrieved successfully"));
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, Messages.Category.Retrieved));
         }
 
         [HttpPut("{id}")]
@@ -108,7 +110,7 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
-                return NotFound(ApiResponse<CategoryDto>.FailureResponse($"Category with id {id} was not found."));
+                throw new NotFoundException("Category", id);
             }
 
             category.Name           = dto.Name;
@@ -127,7 +129,7 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = category.UpdatedAtUtc
             };
 
-            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, "Category updated successfully"));
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(result, Messages.Category.Updated));
         }
 
         [HttpDelete("{id}")]
@@ -137,12 +139,12 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
-                return NotFound(ApiResponse<CategoryDto>.FailureResponse($"Category with id {id} was not found."));
+                throw new NotFoundException("Category", id);
             }
 
             if (category.Products.Any())
-            {
-                return Conflict(ApiResponse<CategoryDto>.FailureResponse("Cannot delete a category that still has products assigned to it."));
+            {    
+                throw new ConflictException(Messages.Category.HasProducts);
             }
 
             await _repository.RemoveAsync(category);

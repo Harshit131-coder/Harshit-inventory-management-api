@@ -2,6 +2,7 @@ using InventoryManagementAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using InventoryManagementAPI.Repositories;
 using InventoryManagementAPI.Repositories.Interfaces;
+using InventoryManagementAPI.Shared.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,14 +13,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
+
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build(); 
+var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment()) 
 {

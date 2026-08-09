@@ -1,7 +1,9 @@
-﻿using InventoryManagementAPI.Models.DTOs.Common;
+﻿using InventoryManagementAPI.Shared.Exceptions;
+using InventoryManagementAPI.Models.DTOs.Common;
 using InventoryManagementAPI.Models.DTOs.Product;
 using InventoryManagementAPI.Models.Entities;
 using InventoryManagementAPI.Repositories.Interfaces;
+using InventoryManagementAPI.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,7 +46,7 @@ namespace InventoryManagementAPI.Controllers
                 TotalCount  = totalCount
             };
            
-            return Ok(ApiResponse<PagedResult<ProductDto>>.SuccessResponse(result, "Product retrieved successfuly"));
+            return Ok(ApiResponse<PagedResult<ProductDto>>.SuccessResponse(result, Messages.Product.Retrieved));
         }
 
         [HttpGet("{id}")]
@@ -54,7 +56,7 @@ namespace InventoryManagementAPI.Controllers
 
             if(product == null)
             {
-                return NotFound(ApiResponse<ProductDto>.FailureResponse($"Product with ID {id} not found."));
+                throw new NotFoundException("Product", id);
             }
 
             var result = new ProductDto
@@ -71,7 +73,7 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = product.UpdatedAtUtc
             };
 
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, "Product retrieved successfully"));
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, Messages.Product.Retrieved));
         }
 
         [HttpPost]
@@ -79,12 +81,12 @@ namespace InventoryManagementAPI.Controllers
         {
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
             {
-                return BadRequest(ApiResponse<ProductDto>.FailureResponse("The specified category does not exist."));
+                throw new BadRequestException(Messages.Product.InvalidCategory);
             }
 
             if (await _repository.SkuExistsAsync(dto.Sku))
             {
-                return Conflict(ApiResponse<ProductDto>.FailureResponse($"A product with SKU '{dto.Sku}' already exists."));
+                throw new ConflictException(Messages.Product.SkuAlreadyExists);
             }
 
             var product = new Product
@@ -118,7 +120,7 @@ namespace InventoryManagementAPI.Controllers
 
             return CreatedAtAction(nameof(GetById), 
                 new { id = result.Id },
-                ApiResponse<ProductDto>.SuccessResponse(result, "Product added successfully"));
+                ApiResponse<ProductDto>.SuccessResponse(result, Messages.Product.Created));
         }
 
         [HttpPut("{id}")]
@@ -128,17 +130,17 @@ namespace InventoryManagementAPI.Controllers
 
             if (product is null)
             {
-                return NotFound(ApiResponse<ProductDto>.FailureResponse($"Product with id {id} was not found."));
+                throw new NotFoundException("Product", id);
             }
 
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
             {
-                return BadRequest(ApiResponse<ProductDto>.FailureResponse("The specified category does not exist."));
+                throw new BadRequestException(Messages.Product.InvalidCategory);
             }
 
             if (await _repository.SkuExistsAsync(dto.Sku, excludeId: id))
             {
-                return Conflict(ApiResponse<ProductDto>.FailureResponse($"A product with SKU '{dto.Sku}' already exists."));
+                  throw new ConflictException(Messages.Product.SkuAlreadyExists);
             }
 
             product.Name            = dto.Name;
@@ -167,7 +169,7 @@ namespace InventoryManagementAPI.Controllers
                 UpdatedAtUtc    = updated.UpdatedAtUtc
             };
 
-            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, "Product updated successfully"));
+            return Ok(ApiResponse<ProductDto>.SuccessResponse(result, Messages.Product.Updated));
         }
 
         [HttpDelete("{id}")]
@@ -177,7 +179,7 @@ namespace InventoryManagementAPI.Controllers
 
             if (product is null)
             {
-                return NotFound(ApiResponse<ProductDto>.FailureResponse($"Product with id {id} was not found."));
+                throw new NotFoundException("Product", id);
             }
 
             await _repository.RemoveAsync(product);
