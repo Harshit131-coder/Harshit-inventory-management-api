@@ -23,7 +23,7 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpGet]
-
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<CategoryDto>>), StatusCodes.Status200OK)]
         public async Task<ActionResult<ApiResponse<PagedResult<CategoryDto>>>> GetAll(
             int pageNumber = 1, int pageSize = 10, string? search = null)
         {
@@ -42,6 +42,9 @@ namespace InventoryManagementAPI.Controllers
 
 
         [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<CategoryDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ApiResponse<CategoryDto>>> Create(CreateCategoryDto dto)
         {
             if (await _repository.NameExistsAsync(dto.Name))
@@ -53,12 +56,14 @@ namespace InventoryManagementAPI.Controllers
             await _repository.AddAsync(category);
             await _repository.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetAll), 
+            return CreatedAtAction(nameof(GetById), 
                 new { id = category.Id }, 
                 ApiResponse<CategoryDto>.SuccessResponse(category.ToDto(), Messages.Category.Created));
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<CategoryDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ApiResponse<CategoryDto>>> GetById(int id)
         {
             var category = await _repository.GetByIdWithProductsAsync(id);
@@ -72,6 +77,9 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<CategoryDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ApiResponse<CategoryDto>>> Update(int id, UpdateCategoryDto dto)
         {
             var category = await _repository.GetByIdWithProductsAsync(id);
@@ -89,6 +97,9 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Delete(int id)
         {
             var category = await _repository.GetByIdWithProductsAsync(id);

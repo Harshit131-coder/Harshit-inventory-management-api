@@ -22,6 +22,7 @@ namespace InventoryManagementAPI.Controllers
 
 
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<ProductDto>>), StatusCodes.Status200OK)]
         public async Task<ActionResult<ApiResponse<PagedResult<ProductDto>>>> GetAll(
             int pageNumber = 1, int pageSize = 10, string ? search = null, int? categoryId = null)
         {
@@ -39,6 +40,8 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ApiResponse<ProductDto>>> GetById(int id)
         {
             var product = await _repository.GetByIdWithCategoryAsync(id);
@@ -52,6 +55,9 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ApiResponse<ProductDto>>> Create(CreateProductDto dto)
         {
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
@@ -77,6 +83,10 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ApiResponse<ProductDto>>> Update(int id, UpdateProductDto dto)
         {
             var product = await _repository.GetByIdAsync(id);
@@ -107,6 +117,8 @@ namespace InventoryManagementAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _repository.GetByIdAsync(id);

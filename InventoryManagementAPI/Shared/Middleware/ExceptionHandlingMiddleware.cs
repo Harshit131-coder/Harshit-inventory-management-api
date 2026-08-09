@@ -39,7 +39,10 @@ public class ExceptionHandlingMiddleware
         context.Response.StatusCode = statusCode;
 
         var response = ApiResponse<object>.FailureResponse(exception.Message);
-        var json = JsonSerializer.Serialize(response);
+        var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
 
         await context.Response.WriteAsync(json);
     }

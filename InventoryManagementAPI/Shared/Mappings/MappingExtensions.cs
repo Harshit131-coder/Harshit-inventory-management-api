@@ -44,23 +44,23 @@ namespace InventoryManagementAPI.Shared.Mappings
 
         public static Product ToEntity(this CreateProductDto dto) => new()
         {
-            Name = dto.Name,
-            Sku = dto.Sku,
-            Description = dto.Description,
-            Price = dto.Price,
+            Name            = dto.Name,
+            Sku             = dto.Sku,
+            Description     = dto.Description,
+            Price           = dto.Price,
             QuantityInStock = dto.QuantityInStock,
-            CategoryId = dto.CategoryId
+            CategoryId      = dto.CategoryId
         };
 
         public static void ApplyUpdate(this Product product, UpdateProductDto dto)
         {
-            product.Name = dto.Name;
-            product.Sku = dto.Sku;
-            product.Description = dto.Description;
-            product.Price = dto.Price;
+            product.Name            = dto.Name;
+            product.Sku             = dto.Sku;
+            product.Description     = dto.Description;
+            product.Price           = dto.Price;
             product.QuantityInStock = dto.QuantityInStock;
-            product.CategoryId = dto.CategoryId;
-            product.UpdatedAtUtc = DateTime.UtcNow;
+            product.CategoryId      = dto.CategoryId;
+            product.UpdatedAtUtc    = DateTime.UtcNow;
         }
     }   
 }
