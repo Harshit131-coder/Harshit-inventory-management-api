@@ -18,14 +18,14 @@ namespace InventoryManagementAPI.Shared.Mappings
 
         public static Category ToEntity(this CreateCategoryDto dto) => new()
         {
-            Name            = dto.Name,
-            Description     = dto.Description
+            Name            = dto.Name.Trim(),
+            Description     = dto.Description?.Trim()
         };
 
         public static void ApplyUpdate(this Category category, UpdateCategoryDto dto)
         {
-            category.Name           = dto.Name;
-            category.Description    = dto.Description;
+            category.Name           = dto.Name.Trim();
+            category.Description    = dto.Description?.Trim();
             category.UpdatedAtUtc   = DateTime.UtcNow;
         }
         public static ProductDto ToDto(this Product product) => new()
@@ -44,9 +44,9 @@ namespace InventoryManagementAPI.Shared.Mappings
 
         public static Product ToEntity(this CreateProductDto dto) => new()
         {
-            Name            = dto.Name,
-            Sku             = dto.Sku,
-            Description     = dto.Description,
+            Name            = dto.Name.Trim(),
+            Sku             = dto.Sku.Trim(),
+            Description     = dto.Description?.Trim(),
             Price           = dto.Price,
             QuantityInStock = dto.QuantityInStock,
             CategoryId      = dto.CategoryId
@@ -54,9 +54,9 @@ namespace InventoryManagementAPI.Shared.Mappings
 
         public static void ApplyUpdate(this Product product, UpdateProductDto dto)
         {
-            product.Name            = dto.Name;
-            product.Sku             = dto.Sku;
-            product.Description     = dto.Description;
+            product.Name            = dto.Name.Trim();
+            product.Sku             = dto.Sku.Trim();
+            product.Description     = dto.Description?.Trim();
             product.Price           = dto.Price;
             product.QuantityInStock = dto.QuantityInStock;
             product.CategoryId      = dto.CategoryId;
