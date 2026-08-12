@@ -16,10 +16,11 @@ namespace InventoryManagementAPI.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryRepository _repository;
-
-        public CategoriesController(ICategoryRepository repository)
+        private readonly ILogger<CategoriesController> _logger;
+        public CategoriesController(ICategoryRepository repository, ILogger<CategoriesController> logger)
         {
             this._repository = repository;
+            this._logger = logger;
         }
 
         [HttpGet]
@@ -49,12 +50,15 @@ namespace InventoryManagementAPI.Controllers
         {
             if (await _repository.NameExistsAsync(dto.Name))
             {
+                _logger.LogWarning(Logs.Category.DuplicateName, dto.Name);
                 throw new ConflictException(Messages.Category.NameAlreadyExists);
             }
 
             var category = dto.ToEntity();
             await _repository.AddAsync(category);
             await _repository.SaveChangesAsync();
+
+            _logger.LogInformation(Logs.Category.Created, category.Id);
 
             return CreatedAtAction(nameof(GetById), 
                 new { id = category.Id }, 
@@ -70,9 +74,11 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
+                _logger.LogWarning(Logs.NotFound, "Category", id);
                 throw new NotFoundException("Category", id);
             }
 
+            _logger.LogInformation(Logs.Category.Retrieved, id);
             return Ok(ApiResponse<CategoryDto>.SuccessResponse(category.ToDto(), Messages.Category.Retrieved));
         }
 
@@ -86,13 +92,14 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
+                _logger.LogWarning(Logs.NotFound, "Category", id);
                 throw new NotFoundException("Category", id);
             }
 
             category.ApplyUpdate(dto);
             await _repository.SaveChangesAsync();
 
-
+            _logger.LogInformation(Logs.Category.Updated, category.Id);
             return Ok(ApiResponse<CategoryDto>.SuccessResponse(category.ToDto(), Messages.Category.Updated));
         }
 
@@ -106,17 +113,20 @@ namespace InventoryManagementAPI.Controllers
 
             if (category is null)
             {
+                _logger.LogWarning(Logs.NotFound, "Category", id);
                 throw new NotFoundException("Category", id);
             }
 
             if (category.Products.Any())
-            {    
+            {
+                _logger.LogWarning(Logs.Category.DeleteBlocked, id); 
                 throw new ConflictException(Messages.Category.HasProducts);
             }
 
             await _repository.RemoveAsync(category);
             await _repository.SaveChangesAsync();
 
+            _logger.LogInformation(Logs.Category.Deleted, category.Id);
             return NoContent();
         }
     }

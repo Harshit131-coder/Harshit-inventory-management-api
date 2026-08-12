@@ -15,9 +15,11 @@ namespace InventoryManagementAPI.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly IProductRepository _repository;
-        public ProductsController(IProductRepository repository)
+        private readonly ILogger<ProductsController> _logger;
+        public ProductsController(IProductRepository repository, ILogger<ProductsController> logger)
         {
             this._repository = repository;
+            this._logger = logger;
         }
 
 
@@ -26,7 +28,8 @@ namespace InventoryManagementAPI.Controllers
         public async Task<ActionResult<ApiResponse<PagedResult<ProductDto>>>> GetAll(
             int pageNumber = 1, int pageSize = 10, string ? search = null, int? categoryId = null)
         {
-            var (products, totalCount) = await _repository.GetPagedWithCategoryAsync(pageNumber, pageSize, search, categoryId);
+            var (products, totalCount) = await _repository.GetPagedWithCategoryAsync(
+                                                pageNumber, pageSize, search, categoryId);
 
             var result = new PagedResult<ProductDto>
             {
@@ -48,9 +51,11 @@ namespace InventoryManagementAPI.Controllers
 
             if(product == null)
             {
+                _logger.LogWarning(Logs.NotFound, "Product", id);
                 throw new NotFoundException("Product", id);
             }
 
+            _logger.LogInformation(Logs.Product.Retrieved, id);
             return Ok(ApiResponse<ProductDto>.SuccessResponse(product.ToDto(), Messages.Product.Retrieved));
         }
 
@@ -62,11 +67,13 @@ namespace InventoryManagementAPI.Controllers
         {
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
             {
+                _logger.LogWarning(Logs.Product.InvalidCategory, dto.CategoryId);
                 throw new BadRequestException(Messages.Product.InvalidCategory);
             }
 
             if (await _repository.SkuExistsAsync(dto.Sku))
             {
+                _logger.LogWarning(Logs.Product.DuplicateSku, dto.Sku);
                 throw new ConflictException(Messages.Product.SkuAlreadyExists);
             }
 
@@ -76,7 +83,7 @@ namespace InventoryManagementAPI.Controllers
 
             var created = await _repository.GetByIdWithCategoryAsync(product.Id);
 
-          
+            _logger.LogInformation(Logs.Product.Created, product.Id);
             return CreatedAtAction(nameof(GetById), 
                 new { id = product.Id },
                 ApiResponse<ProductDto>.SuccessResponse(created!.ToDto(), Messages.Product.Created));
@@ -93,17 +100,20 @@ namespace InventoryManagementAPI.Controllers
 
             if (product is null)
             {
+                _logger.LogWarning(Logs.NotFound, "Product", id);
                 throw new NotFoundException("Product", id);
             }
 
             if (!await _repository.CategoryExistsAsync(dto.CategoryId))
             {
+                _logger.LogWarning(Logs.Product.InvalidCategory, dto.CategoryId);
                 throw new BadRequestException(Messages.Product.InvalidCategory);
             }
 
             if (await _repository.SkuExistsAsync(dto.Sku, excludeId: id))
             {
-                  throw new ConflictException(Messages.Product.SkuAlreadyExists);
+                _logger.LogWarning(Logs.Product.DuplicateSku, dto.Sku);
+                throw new ConflictException(Messages.Product.SkuAlreadyExists);
             }
 
 
@@ -112,7 +122,7 @@ namespace InventoryManagementAPI.Controllers
 
             var updated = await _repository.GetByIdWithCategoryAsync(id);
 
-
+            _logger.LogInformation(Logs.Product.Updated, product.Id);
             return Ok(ApiResponse<ProductDto>.SuccessResponse(updated!.ToDto(), Messages.Product.Updated));
         }
 
@@ -125,12 +135,14 @@ namespace InventoryManagementAPI.Controllers
 
             if (product is null)
             {
+                _logger.LogWarning(Logs.NotFound, "Product", id);
                 throw new NotFoundException("Product", id);
             }
 
             await _repository.RemoveAsync(product);
             await _repository.SaveChangesAsync();
 
+            _logger.LogInformation(Logs.Product.Deleted, product.Id);
             return NoContent();
         }
     }
