@@ -1,5 +1,5 @@
 # Inventory Management API
-A RESTful Web API built with ASP.NET Core (.NET 10), Entity Framework Core, and Microsoft SQL Server for managing Categories and Products, with pagination, search, and centralized error handling.
+A RESTful Web API built with ASP.NET Core (.NET 10), Entity Framework Core, and Microsoft SQL Server for managing Categories and Products, with pagination, search, and centralized the error handling.
 
 ---
 
